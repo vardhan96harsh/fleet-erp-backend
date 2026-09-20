@@ -99,26 +99,48 @@ app.use(
 |--------------------------------------------------------------------------
 */
 
-app.get(
-  "/api/v1/health",
-  (req, res) => {
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            environment:
-              env.nodeEnv,
+app.get("/", (req, res) => {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        status: "healthy",
+        service: "Fleet ERP Backend API",
+        version: "1.0.0",
+        environment: env.nodeEnv,
+        timestamp: new Date().toISOString(),
+      },
+      "Fleet ERP Backend API is live and operational"
+    )
+  );
+});
 
-            timestamp:
-              new Date().toISOString(),
-          },
-          "ERP API is running"
-        )
-      );
-  }
-);
+app.get("/health", (req, res) => {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        status: "healthy",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+      },
+      "Service is healthy"
+    )
+  );
+});
+
+app.get("/api/v1/health", (req, res) => {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        environment: env.nodeEnv,
+        timestamp: new Date().toISOString(),
+      },
+      "ERP API is running"
+    )
+  );
+});
 
 /*
 |--------------------------------------------------------------------------
