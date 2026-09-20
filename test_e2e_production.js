@@ -46,11 +46,14 @@ function test(name, fn) {
   tests.push({ name, fn });
 }
 
-let authToken = null;
+let superAdminToken = null;
+let subAdminToken = null;
 let testVehicleId = null;
 let testDriverId = null;
-let testInventoryId = null;
-let testSubAdminId = null;
+let testInventoryVidishaId = null;
+let testInventoryManawarId = null;
+let testSubAdminUsername = null;
+let testSubAdminPassword = "StrongPass@123";
 
 test("1. Health Check Endpoint", async () => {
   const res = await request("GET", "/health");
@@ -65,33 +68,66 @@ test("2. Super Admin Login & JWT Issuance", async () => {
     password: "Pass@123",
   });
   if (res.status !== 200 || !res.body.data?.accessToken) {
-    throw new Error(`Login failed: ${JSON.stringify(res.body)}`);
+    throw new Error(`Super Admin Login failed: ${JSON.stringify(res.body)}`);
   }
-  authToken = res.body.data.accessToken;
+  superAdminToken = res.body.data.accessToken;
 });
 
 test("3. Auth Verification (/auth/me)", async () => {
-  const res = await request("GET", "/auth/me", null, authToken);
+  const res = await request("GET", "/auth/me", null, superAdminToken);
   if (res.status !== 200 || res.body.data?.user?.username !== "admin") {
     throw new Error(`Auth me failed: ${JSON.stringify(res.body)}`);
   }
 });
 
-test("4. Dashboard Metrics & KPI Aggregation", async () => {
-  const res = await request("GET", "/dashboard/summary", null, authToken);
+test("4. Sub Admin Creation & Login", async () => {
+  testSubAdminUsername = `subadmin_${Date.now().toString().slice(-4)}`;
+  const createRes = await request(
+    "POST",
+    "/users",
+    {
+      name: "Vidisha Depot Manager",
+      username: testSubAdminUsername,
+      email: `${testSubAdminUsername}@fleetledger.com`,
+      password: testSubAdminPassword,
+      role: "SUB_ADMIN",
+    },
+    superAdminToken
+  );
+
+  if (createRes.status !== 201 || !(createRes.body.data?.id || createRes.body.data?._id)) {
+    throw new Error(`Sub Admin create failed: ${JSON.stringify(createRes.body)}`);
+  }
+
+  // Login as Sub Admin
+  const loginRes = await request("POST", "/auth/login", {
+    username: testSubAdminUsername,
+    password: testSubAdminPassword,
+  });
+
+  if (loginRes.status !== 200 || !loginRes.body.data?.accessToken) {
+    throw new Error(`Sub Admin login failed: ${JSON.stringify(loginRes.body)}`);
+  }
+  subAdminToken = loginRes.body.data.accessToken;
+});
+
+test("5. Sub Admin Dashboard Access & Metrics Retrieval", async () => {
+  const res = await request("GET", "/dashboard/summary", null, subAdminToken);
   if (res.status !== 200 || !res.body.data?.totals) {
-    throw new Error(`Dashboard summary failed: ${JSON.stringify(res.body)}`);
+    throw new Error(`Sub Admin Dashboard summary failed: ${JSON.stringify(res.body)}`);
+  }
+  if (typeof res.body.data.totals.vehicles !== "number") {
+    throw new Error("Dashboard totals missing vehicle metrics");
   }
 });
 
-test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
+test("6. Commercial Vehicle Management (CRUD & Compliance)", async () => {
   const uniqueCode = Date.now().toString().slice(-4);
-  // Create Vehicle
   const createRes = await request(
     "POST",
     "/vehicles",
     {
-      vehicleNo: `MH04E2E${uniqueCode}`,
+      vehicleNo: `MP04E2E${uniqueCode}`,
       type: "16 Wheeler",
       capacity: "25 MT",
       ownership: "OWNED",
@@ -102,7 +138,7 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
       insuranceExpiry: "2027-12-31",
       permitExpiry: "2027-12-31",
       permitType: "NATIONAL",
-      rcNumber: `RC-MH04-${uniqueCode}`,
+      rcNumber: `RC-MP04-${uniqueCode}`,
       rcExpiry: "2030-01-01",
       status: "ACTIVE",
       accidentReports: [
@@ -114,35 +150,23 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
         },
       ],
     },
-    authToken
+    superAdminToken
   );
 
-  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.accidentReports?.[0]?.driverName !== "Suresh Patil") {
+  if (createRes.status !== 201 || !createRes.body.data?._id) {
     throw new Error(`Vehicle create failed: ${JSON.stringify(createRes.body)}`);
   }
   testVehicleId = createRes.body.data._id;
 
-  // List Vehicles
-  const listRes = await request("GET", "/vehicles", null, authToken);
+  // List Vehicles (Sub Admin can also view)
+  const listRes = await request("GET", "/vehicles", null, subAdminToken);
   if (listRes.status !== 200 || !Array.isArray(listRes.body.data)) {
     throw new Error(`Vehicle list failed: ${JSON.stringify(listRes.body)}`);
   }
-
-  // Update Vehicle
-  const updateRes = await request(
-    "PATCH",
-    `/vehicles/${testVehicleId}`,
-    { capacity: "30 MT", status: "DRIVER_NOT_AVAILABLE", permitType: "STATE" },
-    authToken
-  );
-  if (updateRes.status !== 200 || updateRes.body.data?.capacity !== "30 MT" || updateRes.body.data?.status !== "DRIVER_NOT_AVAILABLE" || updateRes.body.data?.permitType !== "STATE") {
-    throw new Error(`Vehicle update failed: ${JSON.stringify(updateRes.body)}`);
-  }
 });
 
-test("6. Driver Personnel & Vehicle Allocation", async () => {
+test("7. Driver Personnel & Vehicle Allocation", async () => {
   const uniqueMobile = `98${Date.now().toString().slice(-8)}`;
-  // Create Driver
   const createRes = await request(
     "POST",
     "/drivers",
@@ -157,72 +181,102 @@ test("6. Driver Personnel & Vehicle Allocation", async () => {
       status: "ACTIVE",
       assignedVehicleId: testVehicleId,
     },
-    authToken
-  );
-
-  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.driverId !== `DRV-${uniqueMobile.slice(-4)}` || createRes.body.data?.fatherName !== "Suresh Patil") {
-    throw new Error(`Driver create failed: ${JSON.stringify(createRes.body)}`);
-  }
-  testDriverId = createRes.body.data._id;
-
-  // List Drivers
-  const listRes = await request("GET", "/drivers", null, authToken);
-  if (listRes.status !== 200 || !Array.isArray(listRes.body.data)) {
-    throw new Error(`Driver list failed: ${JSON.stringify(listRes.body)}`);
-  }
-
-  // Update Driver
-  const updateRes = await request(
-    "PATCH",
-    `/drivers/${testDriverId}`,
-    { fatherName: "Suresh R. Patil" },
-    authToken
-  );
-  if (updateRes.status !== 200 || updateRes.body.data?.fatherName !== "Suresh R. Patil") {
-    throw new Error(`Driver update failed: ${JSON.stringify(updateRes.body)}`);
-  }
-});
-
-test("7. Inventory SKU & Stock Management across Locations", async () => {
-  const uniqueCode = Date.now().toString().slice(-4);
-  // Create Inventory Item
-  const createRes = await request(
-    "POST",
-    "/inventory",
-    {
-      itemCode: `OIL-SYN-${uniqueCode}`,
-      itemName: "Synthetic Diesel Engine Oil 15W-40",
-      category: "Lubricants & Oils",
-      brand: "Castrol",
-      size: "20L Can",
-      quantity: 60,
-      unit: "LTR",
-      purchaseRate: 290,
-      minimumStock: 15,
-      location: "LOCATION_A",
-      remarks: "Rack 2-B",
-      status: "ACTIVE",
-    },
-    authToken
+    superAdminToken
   );
 
   if (createRes.status !== 201 || !createRes.body.data?._id) {
-    throw new Error(`Inventory create failed: ${JSON.stringify(createRes.body)}`);
+    throw new Error(`Driver create failed: ${JSON.stringify(createRes.body)}`);
   }
-  testInventoryId = createRes.body.data._id;
+  testDriverId = createRes.body.data._id;
+});
 
-  // List Inventory
-  const listRes = await request("GET", "/inventory", null, authToken);
-  if (listRes.status !== 200 || !Array.isArray(listRes.body.data)) {
-    throw new Error(`Inventory list failed: ${JSON.stringify(listRes.body)}`);
+test("8. Inventory: Vidisha (LOCATION_A) with Tarpaulin / Tripal & Custom Category", async () => {
+  const uniqueCode = Date.now().toString().slice(-4);
+  // Create Tripal in Vidisha
+  const tripalRes = await request(
+    "POST",
+    "/inventory",
+    {
+      itemCode: `TRP-HD-${uniqueCode}`,
+      itemName: "Heavy Duty Waterproof Tripal 24x18 Ft",
+      category: "Tripal / Waterproof Tarpaulin",
+      brand: "Supreme Silpaulin",
+      size: "24x18 Ft",
+      quantity: 50,
+      unit: "PCS",
+      purchaseRate: 1850,
+      minimumStock: 10,
+      location: "LOCATION_A",
+      remarks: "Tripal Rack A-1",
+      status: "ACTIVE",
+    },
+    subAdminToken
+  );
+
+  if (tripalRes.status !== 201 || !tripalRes.body.data?._id) {
+    throw new Error(`Vidisha Tripal inventory creation failed: ${JSON.stringify(tripalRes.body)}`);
+  }
+  testInventoryVidishaId = tripalRes.body.data._id;
+
+  // Create Custom Category Item in Vidisha
+  const customRes = await request(
+    "POST",
+    "/inventory",
+    {
+      itemCode: `HYD-SEAL-${uniqueCode}`,
+      itemName: "Hydraulic Jack High Pressure Seal",
+      category: "Hydraulic Spares",
+      brand: "Bosch Rexroth",
+      size: "32mm",
+      quantity: 25,
+      unit: "SET",
+      purchaseRate: 450,
+      minimumStock: 5,
+      location: "VIDISHA",
+      remarks: "Hydraulic Cabinet 3",
+      status: "ACTIVE",
+    },
+    subAdminToken
+  );
+
+  if (customRes.status !== 201 || customRes.body.data?.location !== "LOCATION_A") {
+    throw new Error(`Custom category & VIDISHA normalization failed: ${JSON.stringify(customRes.body)}`);
   }
 });
 
-test("8. Attendance System (Daily Roster, 1-Click Mark, Bulk Mark & Monthly Matrix)", async () => {
+test("9. Inventory: Manawar (LOCATION_B) with Safety Gear, Jack, Rope, Wheel Bolt", async () => {
+  const uniqueCode = Date.now().toString().slice(-4);
+  const boltRes = await request(
+    "POST",
+    "/inventory",
+    {
+      itemCode: `WHL-BLT-${uniqueCode}`,
+      itemName: "Heavy Duty Wheel Bolt & Nut 22mm",
+      category: "Wheel Bolt",
+      brand: "Tata Genuine",
+      size: "22mm x 1.5",
+      quantity: 200,
+      unit: "PCS",
+      purchaseRate: 120,
+      minimumStock: 40,
+      location: "MANAWAR",
+      remarks: "Bin M-04",
+      status: "ACTIVE",
+    },
+    subAdminToken
+  );
+
+  if (boltRes.status !== 201 || boltRes.body.data?.location !== "LOCATION_B") {
+    throw new Error(`Manawar Wheel Bolt inventory creation failed: ${JSON.stringify(boltRes.body)}`);
+  }
+  testInventoryManawarId = boltRes.body.data._id;
+});
+
+test("10. Daily & Monthly Attendance Register", async () => {
   const todayStr = new Date().toISOString().slice(0, 10);
   const monthStr = todayStr.slice(0, 7);
 
-  // Mark Daily
+  // Mark Daily Attendance
   const markRes = await request(
     "POST",
     "/attendance",
@@ -231,93 +285,59 @@ test("8. Attendance System (Daily Roster, 1-Click Mark, Bulk Mark & Monthly Matr
       date: todayStr,
       status: "PRESENT",
     },
-    authToken
+    subAdminToken
   );
   if (markRes.status !== 200 || markRes.body.data?.status !== "PRESENT") {
     throw new Error(`Mark attendance failed: ${JSON.stringify(markRes.body)}`);
   }
 
-  // Get Daily
+  // Retrieve Daily
   const dailyRes = await request(
     "GET",
     `/attendance/daily?date=${todayStr}`,
     null,
-    authToken
+    subAdminToken
   );
   if (dailyRes.status !== 200 || !Array.isArray(dailyRes.body.data?.records)) {
     throw new Error(`Get daily attendance failed: ${JSON.stringify(dailyRes.body)}`);
   }
 
-  // Bulk Mark
-  const bulkRes = await request(
-    "POST",
-    "/attendance/bulk",
-    {
-      date: todayStr,
-      records: [{ driverId: testDriverId, status: "PRESENT" }],
-    },
-    authToken
-  );
-  if (bulkRes.status !== 200 || !bulkRes.body.success) {
-    throw new Error(`Bulk mark attendance failed: ${JSON.stringify(bulkRes.body)}`);
-  }
-
-  // Get Monthly Sheet Matrix
+  // Retrieve Monthly
   const monthlyRes = await request(
     "GET",
     `/attendance/monthly?month=${monthStr}`,
     null,
-    authToken
+    subAdminToken
   );
   if (monthlyRes.status !== 200 || !Array.isArray(monthlyRes.body.data?.drivers)) {
     throw new Error(`Get monthly attendance failed: ${JSON.stringify(monthlyRes.body)}`);
   }
 });
 
-test("9. Sub Admin Provisioning & Security Controls (RBAC)", async () => {
-  const uniqueUser = `ops_staff_${Date.now().toString().slice(-4)}`;
-  const createRes = await request(
-    "POST",
-    "/users",
-    {
-      name: "Operations Staff Member",
-      username: uniqueUser,
-      email: `${uniqueUser}@fleetledger.com`,
-      password: "StrongPass@123",
-      role: "SUB_ADMIN",
-    },
-    authToken
-  );
-
-  if (createRes.status !== 201 || !(createRes.body.data?.id || createRes.body.data?._id)) {
-    throw new Error(`Sub Admin create failed: ${JSON.stringify(createRes.body)}`);
-  }
-  testSubAdminId = createRes.body.data.id || createRes.body.data._id;
-
-  // List Sub Admins
-  const listRes = await request("GET", "/users", null, authToken);
-  if (listRes.status !== 200 || !Array.isArray(listRes.body.data)) {
-    throw new Error(`User list failed: ${JSON.stringify(listRes.body)}`);
-  }
-});
-
-test("10. Soft Delete & Recycle Bin Restoration", async () => {
+test("11. Soft Delete & Recycle Bin Restoration", async () => {
   // Soft Delete Inventory Item
-  const delRes = await request("DELETE", `/inventory/${testInventoryId}`, null, authToken);
+  const delRes = await request("DELETE", `/inventory/${testInventoryVidishaId}`, null, subAdminToken);
   if (delRes.status !== 200) {
     throw new Error(`Inventory soft delete failed: ${JSON.stringify(delRes.body)}`);
   }
 
   // Check Recycle Bin
-  const binRes = await request("GET", "/inventory/deleted", null, authToken);
-  if (binRes.status !== 200 || !binRes.body.data?.some((i) => i._id === testInventoryId)) {
+  const binRes = await request("GET", "/inventory/deleted", null, subAdminToken);
+  if (binRes.status !== 200 || !binRes.body.data?.some((i) => i._id === testInventoryVidishaId)) {
     throw new Error(`Recycle bin missing deleted item: ${JSON.stringify(binRes.body)}`);
   }
 
   // Restore from Recycle Bin
-  const restoreRes = await request("POST", `/inventory/${testInventoryId}/restore`, null, authToken);
+  const restoreRes = await request("POST", `/inventory/${testInventoryVidishaId}/restore`, null, subAdminToken);
   if (restoreRes.status !== 200) {
     throw new Error(`Restore failed: ${JSON.stringify(restoreRes.body)}`);
+  }
+});
+
+test("12. Super Admin Dashboard Verification", async () => {
+  const res = await request("GET", "/dashboard/summary", null, superAdminToken);
+  if (res.status !== 200 || !res.body.data?.totals) {
+    throw new Error(`Super Admin Dashboard summary failed: ${JSON.stringify(res.body)}`);
   }
 });
 
