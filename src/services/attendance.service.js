@@ -82,11 +82,13 @@ export const getAttendanceByMonth = async (month) => {
     let presentCount = 0;
     let absentCount = 0;
     let leaveCount = 0;
+    let halfDayCount = 0;
 
     Object.values(days).forEach((entry) => {
       if (entry.status === "PRESENT") presentCount++;
       else if (entry.status === "ABSENT") absentCount++;
       else if (entry.status === "LEAVE") leaveCount++;
+      else if (entry.status === "HALF_DAY") halfDayCount++;
     });
 
     return {
@@ -100,6 +102,7 @@ export const getAttendanceByMonth = async (month) => {
         present: presentCount,
         absent: absentCount,
         leave: leaveCount,
+        halfDay: halfDayCount,
       },
     };
   });

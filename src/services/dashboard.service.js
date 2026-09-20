@@ -4,6 +4,7 @@ import Vehicle from "../models/Vehicle.js";
 import Driver from "../models/Driver.js";
 import Inventory from "../models/Inventory.js";
 import User from "../models/User.js";
+import Attendance from "../models/Attendance.js";
 
 import ApiError from "../utils/ApiError.js";
 import { ROLES } from "../constants/roles.js";
@@ -96,6 +97,7 @@ export const getDashboardSummary = async ({
   const today = startOfToday();
   const in30Days = addDays(today, 30);
   const in45Days = addDays(today, 45);
+  const todayDateStr = new Date().toISOString().slice(0, 10);
 
   const vehicleFilter = {
     ...ownerFilter,
@@ -124,6 +126,7 @@ export const getDashboardSummary = async ({
     recentDrivers,
     recentInventory,
     vehiclesWithRelevantDates,
+    todayAttendanceRecords,
   ] = await Promise.all([
     Vehicle.countDocuments(vehicleFilter),
 
@@ -220,7 +223,26 @@ export const getDashboardSummary = async ({
           .join(" ")}`
       )
       .lean(),
+
+    Attendance.find({ date: todayDateStr })
+      .populate("driver", "name mobile assignedVehicle")
+      .lean(),
   ]);
+
+  // Attendance metrics computation
+  let presentCount = 0;
+  let absentCount = 0;
+  let leaveCount = 0;
+  let halfDayCount = 0;
+
+  todayAttendanceRecords.forEach((r) => {
+    if (r.status === "PRESENT") presentCount++;
+    else if (r.status === "ABSENT") absentCount++;
+    else if (r.status === "LEAVE") leaveCount++;
+    else if (r.status === "HALF_DAY") halfDayCount++;
+  });
+
+  const unmarkedCount = Math.max(0, driverCount - todayAttendanceRecords.length);
 
   const documentsNeedingAttention = [];
 
@@ -279,6 +301,32 @@ export const getDashboardSummary = async ({
       vehiclesWithExpiredDocuments:
         expiredVehicleCount,
       lowStockItems: lowStockCount,
+      attendance: {
+        date: todayDateStr,
+        present: presentCount,
+        absent: absentCount,
+        leave: leaveCount,
+        halfDay: halfDayCount,
+        unmarked: unmarkedCount,
+        total: driverCount,
+      },
+    },
+
+    attendanceToday: {
+      date: todayDateStr,
+      totalDrivers: driverCount,
+      present: presentCount,
+      absent: absentCount,
+      leave: leaveCount,
+      halfDay: halfDayCount,
+      unmarked: unmarkedCount,
+      records: todayAttendanceRecords.slice(0, 8).map((r) => ({
+        driverId: r.driver?._id || r.driver,
+        name: r.driver?.name || "Driver",
+        mobile: r.driver?.mobile || "",
+        status: r.status,
+        notes: r.notes || "",
+      })),
     },
 
     documentsNeedingAttention:
