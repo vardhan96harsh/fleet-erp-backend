@@ -26,8 +26,8 @@ export const INVENTORY_LOCATION_VALUES =
 */
 
 export const INVENTORY_LOCATION_NAMES = {
-  LOCATION_A: "Location A",
-  LOCATION_B: "Location B",
+  LOCATION_A: "Vidisha",
+  LOCATION_B: "Manawar",
 };
 
 export const getInventoryLocationName = (

@@ -6,15 +6,26 @@ import { z } from "zod";
 |--------------------------------------------------------------------------
 */
 
-const inventoryLocationSchema = z.enum(
-  [
-    "LOCATION_A",
-    "LOCATION_B",
-  ],
-  {
-    message:
-      "Location must be LOCATION_A or LOCATION_B",
-  }
+const normalizeLocation = (val) => {
+  if (typeof val !== "string") return val;
+  const s = val.trim().toUpperCase();
+  if (s === "VIDISHA" || s === "LOCATION_A" || s === "LOCATION A") return "LOCATION_A";
+  if (s === "MANAWAR" || s === "LOCATION_B" || s === "LOCATION B") return "LOCATION_B";
+  return val;
+};
+
+const inventoryLocationSchema = z.preprocess(
+  normalizeLocation,
+  z.enum(
+    [
+      "LOCATION_A",
+      "LOCATION_B",
+    ],
+    {
+      message:
+        "Location must be Vidisha (LOCATION_A) or Manawar (LOCATION_B)",
+    }
+  )
 );
 
 /*
