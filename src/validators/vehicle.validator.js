@@ -134,6 +134,7 @@ export const createVehicleSchema = z.object({
         "ACTIVE",
         "INACTIVE",
         "UNDER_SERVICE",
+        "DRIVER_NOT_AVAILABLE",
       ])
       .optional(),
   }),
@@ -218,6 +219,7 @@ export const updateVehicleSchema = z.object({
           "ACTIVE",
           "INACTIVE",
           "UNDER_SERVICE",
+          "DRIVER_NOT_AVAILABLE",
         ])
         .optional(),
     })

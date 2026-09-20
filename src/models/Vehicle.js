@@ -175,6 +175,7 @@ const vehicleSchema = new mongoose.Schema(
         "ACTIVE",
         "INACTIVE",
         "UNDER_SERVICE",
+        "DRIVER_NOT_AVAILABLE",
       ],
       default: "ACTIVE",
     },

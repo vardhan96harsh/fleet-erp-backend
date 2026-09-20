@@ -123,10 +123,10 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
   const updateRes = await request(
     "PATCH",
     `/vehicles/${testVehicleId}`,
-    { capacity: "30 MT" },
+    { capacity: "30 MT", status: "DRIVER_NOT_AVAILABLE" },
     authToken
   );
-  if (updateRes.status !== 200 || updateRes.body.data?.capacity !== "30 MT") {
+  if (updateRes.status !== 200 || updateRes.body.data?.capacity !== "30 MT" || updateRes.body.data?.status !== "DRIVER_NOT_AVAILABLE") {
     throw new Error(`Vehicle update failed: ${JSON.stringify(updateRes.body)}`);
   }
 });
