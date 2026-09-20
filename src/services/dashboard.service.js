@@ -37,46 +37,45 @@ const resolveOwnerFilter = async ({
   currentUser,
   ownerId,
 }) => {
-  if (currentUser.role === ROLES.SUB_ADMIN) {
-    return {
-      owner: currentUser._id,
-    };
-  }
+  const allowedRoles = [
+    ROLES.SUPER_ADMIN,
+    ROLES.SUB_ADMIN,
+  ];
 
-  if (currentUser.role !== ROLES.SUPER_ADMIN) {
+  if (!allowedRoles.includes(currentUser.role)) {
     throw new ApiError(
       403,
       "You do not have permission to view dashboard data"
     );
   }
 
-  // Super Admin: show all records
-  if (!ownerId) {
-    return {};
+  // If specific creator filter is requested by super admin
+  if (ownerId && currentUser.role === ROLES.SUPER_ADMIN) {
+    if (!mongoose.isValidObjectId(ownerId)) {
+      throw new ApiError(
+        400,
+        "Invalid Sub Admin ID"
+      );
+    }
+
+    const owner = await User.findOne({
+      _id: ownerId,
+      role: ROLES.SUB_ADMIN,
+    }).select("_id");
+
+    if (!owner) {
+      throw new ApiError(
+        404,
+        "Sub Admin not found"
+      );
+    }
+
+    return {
+      createdBy: owner._id,
+    };
   }
 
-  if (!mongoose.isValidObjectId(ownerId)) {
-    throw new ApiError(
-      400,
-      "Invalid Sub Admin ID"
-    );
-  }
-
-  const owner = await User.findOne({
-    _id: ownerId,
-    role: ROLES.SUB_ADMIN,
-  }).select("_id");
-
-  if (!owner) {
-    throw new ApiError(
-      404,
-      "Sub Admin not found"
-    );
-  }
-
-  return {
-    owner: owner._id,
-  };
+  return {};
 };
 
 const vehicleDateCondition = (condition) => ({
@@ -169,7 +168,7 @@ export const getDashboardSummary = async ({
       },
     })
       .select(
-        "itemCode itemName quantity minimumStock unit owner updatedAt"
+        "itemCode itemName quantity minimumStock unit createdBy updatedAt"
       )
       .sort({
         updatedAt: -1,
@@ -179,7 +178,7 @@ export const getDashboardSummary = async ({
 
     Vehicle.find(vehicleFilter)
       .select(
-        "vehicleNo type status owner createdAt updatedAt"
+        "vehicleNo type status createdBy createdAt updatedAt"
       )
       .sort({
         createdAt: -1,
@@ -189,7 +188,7 @@ export const getDashboardSummary = async ({
 
     Driver.find(driverFilter)
       .select(
-        "name mobile status assignedVehicle owner createdAt updatedAt"
+        "name mobile status assignedVehicle createdBy createdAt updatedAt"
       )
       .populate(
         "assignedVehicle",
@@ -203,7 +202,7 @@ export const getDashboardSummary = async ({
 
     Inventory.find(inventoryFilter)
       .select(
-        "itemCode itemName quantity minimumStock unit status owner createdAt updatedAt"
+        "itemCode itemName quantity minimumStock unit status createdBy createdAt updatedAt"
       )
       .sort({
         createdAt: -1,
@@ -218,7 +217,7 @@ export const getDashboardSummary = async ({
       }),
     })
       .select(
-        `vehicleNo owner ${EXPIRY_FIELDS
+        `vehicleNo createdBy ${EXPIRY_FIELDS
           .map(([, field]) => field)
           .join(" ")}`
       )
@@ -266,7 +265,7 @@ export const getDashboardSummary = async ({
       documentsNeedingAttention.push({
         vehicleId: vehicle._id,
         vehicleNo: vehicle.vehicleNo,
-        owner: vehicle.owner,
+        createdBy: vehicle.createdBy,
         document,
         expiryDate,
         daysRemaining,
