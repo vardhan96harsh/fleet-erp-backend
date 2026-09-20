@@ -50,6 +50,18 @@ const accidentReportSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
     },
+
+    driverName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    driverMobile: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   {
     _id: true,

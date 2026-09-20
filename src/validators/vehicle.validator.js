@@ -56,6 +56,18 @@ const accidentReportItemSchema = z.object({
       "Accident description is required"
     )
     .max(1000),
+
+  driverName: z
+    .string()
+    .trim()
+    .max(150)
+    .optional(),
+
+  driverMobile: z
+    .string()
+    .trim()
+    .max(30)
+    .optional(),
 });
 
 /*

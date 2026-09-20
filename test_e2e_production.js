@@ -105,11 +105,19 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
       rcNumber: `RC-MH04-${uniqueCode}`,
       rcExpiry: "2030-01-01",
       status: "ACTIVE",
+      accidentReports: [
+        {
+          date: "2026-09-01",
+          description: "Minor rear bumper scratch",
+          driverName: "Suresh Patil",
+          driverMobile: "9876543210",
+        },
+      ],
     },
     authToken
   );
 
-  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.permitType !== "NATIONAL") {
+  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.accidentReports?.[0]?.driverName !== "Suresh Patil") {
     throw new Error(`Vehicle create failed: ${JSON.stringify(createRes.body)}`);
   }
   testVehicleId = createRes.body.data._id;
