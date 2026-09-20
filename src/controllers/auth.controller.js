@@ -48,6 +48,7 @@ export const login = asyncHandler(
         {
           user: result.user,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
         },
         "Login successful"
       )
@@ -58,7 +59,7 @@ export const login = asyncHandler(
 export const refresh = asyncHandler(
   async (req, res) => {
     const refreshToken =
-      req.cookies.refreshToken;
+      req.cookies?.refreshToken || req.body?.refreshToken;
 
     const result =
       await refreshUserToken({
@@ -83,6 +84,8 @@ export const refresh = asyncHandler(
         {
           accessToken:
             result.accessToken,
+          refreshToken:
+            result.refreshToken,
         },
         "Token refreshed"
       )
@@ -93,9 +96,11 @@ export const refresh = asyncHandler(
 export const logout = asyncHandler(
   async (req, res) => {
     const refreshToken =
-      req.cookies.refreshToken;
+      req.cookies?.refreshToken || req.body?.refreshToken;
 
-    await logoutUser(refreshToken);
+    if (refreshToken) {
+      await logoutUser(refreshToken);
+    }
 
     res.clearCookie(
       "refreshToken",
