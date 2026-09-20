@@ -108,6 +108,8 @@ export const createVehicle = async ({
       data.permitExpiry
     ),
 
+    permitType: data.permitType || "NATIONAL",
+
     rcNumber: data.rcNumber || "",
 
     rcExpiry: normalizeNullableDate(
@@ -255,6 +257,7 @@ export const updateVehicle = async ({
     "ownerName",
     "ownerMobile",
     "rcNumber",
+    "permitType",
     "status",
   ];
 

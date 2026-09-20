@@ -101,6 +101,7 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
       fitnessExpiry: "2027-12-31",
       insuranceExpiry: "2027-12-31",
       permitExpiry: "2027-12-31",
+      permitType: "NATIONAL",
       rcNumber: `RC-MH04-${uniqueCode}`,
       rcExpiry: "2030-01-01",
       status: "ACTIVE",
@@ -108,7 +109,7 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
     authToken
   );
 
-  if (createRes.status !== 201 || !createRes.body.data?._id) {
+  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.permitType !== "NATIONAL") {
     throw new Error(`Vehicle create failed: ${JSON.stringify(createRes.body)}`);
   }
   testVehicleId = createRes.body.data._id;
@@ -123,10 +124,10 @@ test("5. Commercial Vehicle Management (CRUD & Compliance)", async () => {
   const updateRes = await request(
     "PATCH",
     `/vehicles/${testVehicleId}`,
-    { capacity: "30 MT", status: "DRIVER_NOT_AVAILABLE" },
+    { capacity: "30 MT", status: "DRIVER_NOT_AVAILABLE", permitType: "STATE" },
     authToken
   );
-  if (updateRes.status !== 200 || updateRes.body.data?.capacity !== "30 MT" || updateRes.body.data?.status !== "DRIVER_NOT_AVAILABLE") {
+  if (updateRes.status !== 200 || updateRes.body.data?.capacity !== "30 MT" || updateRes.body.data?.status !== "DRIVER_NOT_AVAILABLE" || updateRes.body.data?.permitType !== "STATE") {
     throw new Error(`Vehicle update failed: ${JSON.stringify(updateRes.body)}`);
   }
 });

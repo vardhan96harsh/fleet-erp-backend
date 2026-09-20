@@ -130,6 +130,13 @@ const vehicleSchema = new mongoose.Schema(
       default: null,
     },
 
+    permitType: {
+      type: String,
+      enum: ["NATIONAL", "STATE", ""],
+      default: "NATIONAL",
+      trim: true,
+    },
+
     rcNumber: {
       type: String,
       trim: true,

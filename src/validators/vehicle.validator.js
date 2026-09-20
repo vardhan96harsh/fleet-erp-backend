@@ -113,6 +113,10 @@ export const createVehicleSchema = z.object({
 
     permitExpiry: optionalDateSchema,
 
+    permitType: z
+      .enum(["NATIONAL", "STATE", ""])
+      .optional(),
+
     rcNumber: z
       .string()
       .trim()
@@ -197,6 +201,10 @@ export const updateVehicleSchema = z.object({
         optionalDateSchema,
 
       permitExpiry: optionalDateSchema,
+
+      permitType: z
+        .enum(["NATIONAL", "STATE", ""])
+        .optional(),
 
       rcNumber: z
         .string()
