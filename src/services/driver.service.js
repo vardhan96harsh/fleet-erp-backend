@@ -158,6 +158,10 @@ export const createDriver = async ({
   const driver = await Driver.create({
     name: data.name,
 
+    driverId: data.driverId || "",
+
+    fatherName: data.fatherName || "",
+
     mobile: normalizedMobile,
 
     licenceNo:
@@ -333,6 +337,8 @@ export const updateDriver = async ({
 
   const allowedFields = [
     "name",
+    "driverId",
+    "fatherName",
     "licenceNo",
     "status",
   ];

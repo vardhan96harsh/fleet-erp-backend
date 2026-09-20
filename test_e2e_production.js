@@ -148,6 +148,8 @@ test("6. Driver Personnel & Vehicle Allocation", async () => {
     "/drivers",
     {
       name: `Ramesh Driver ${uniqueMobile.slice(-4)}`,
+      driverId: `DRV-${uniqueMobile.slice(-4)}`,
+      fatherName: "Suresh Patil",
       mobile: uniqueMobile,
       licenceNo: `DL-042026${uniqueMobile.slice(-6)}`,
       licenceExpiry: "2028-06-30",
@@ -158,7 +160,7 @@ test("6. Driver Personnel & Vehicle Allocation", async () => {
     authToken
   );
 
-  if (createRes.status !== 201 || !createRes.body.data?._id) {
+  if (createRes.status !== 201 || !createRes.body.data?._id || createRes.body.data?.driverId !== `DRV-${uniqueMobile.slice(-4)}` || createRes.body.data?.fatherName !== "Suresh Patil") {
     throw new Error(`Driver create failed: ${JSON.stringify(createRes.body)}`);
   }
   testDriverId = createRes.body.data._id;
@@ -167,6 +169,17 @@ test("6. Driver Personnel & Vehicle Allocation", async () => {
   const listRes = await request("GET", "/drivers", null, authToken);
   if (listRes.status !== 200 || !Array.isArray(listRes.body.data)) {
     throw new Error(`Driver list failed: ${JSON.stringify(listRes.body)}`);
+  }
+
+  // Update Driver
+  const updateRes = await request(
+    "PATCH",
+    `/drivers/${testDriverId}`,
+    { fatherName: "Suresh R. Patil" },
+    authToken
+  );
+  if (updateRes.status !== 200 || updateRes.body.data?.fatherName !== "Suresh R. Patil") {
+    throw new Error(`Driver update failed: ${JSON.stringify(updateRes.body)}`);
   }
 });
 

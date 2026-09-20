@@ -36,7 +36,9 @@ export const IMPORT_COLUMNS = {
   ],
 
   DRIVER: [
+    ["Driver ID", "driverId"],
     ["Name", "name"],
+    ["Father Name", "fatherName"],
     ["Mobile", "mobile"],
     ["Licence No", "licenceNo"],
     ["Licence Expiry", "licenceExpiry"],

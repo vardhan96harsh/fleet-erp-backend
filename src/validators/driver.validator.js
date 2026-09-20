@@ -49,6 +49,18 @@ export const createDriverSchema = z.object({
       )
       .max(100),
 
+    driverId: z
+      .string()
+      .trim()
+      .max(50)
+      .optional(),
+
+    fatherName: z
+      .string()
+      .trim()
+      .max(100)
+      .optional(),
+
     mobile: mobileSchema,
 
     licenceNo: z
@@ -98,6 +110,18 @@ export const updateDriverSchema = z.object({
           2,
           "Driver name cannot be empty"
         )
+        .max(100)
+        .optional(),
+
+      driverId: z
+        .string()
+        .trim()
+        .max(50)
+        .optional(),
+
+      fatherName: z
+        .string()
+        .trim()
         .max(100)
         .optional(),
 

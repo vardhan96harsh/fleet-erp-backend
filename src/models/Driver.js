@@ -18,6 +18,18 @@ const driverSchema = new mongoose.Schema(
       maxlength: 100,
     },
 
+    driverId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    fatherName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     mobile: {
       type: String,
       trim: true,
