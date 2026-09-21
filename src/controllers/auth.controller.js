@@ -82,10 +82,9 @@ export const refresh = asyncHandler(
       new ApiResponse(
         200,
         {
-          accessToken:
-            result.accessToken,
-          refreshToken:
-            result.refreshToken,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
         },
         "Token refreshed"
       )
