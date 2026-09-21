@@ -78,6 +78,7 @@ const populateDriver = (query) =>
 const validateAssignedVehicle = async ({
   vehicleId,
   currentDriverId = null,
+  forceReassign = false,
 }) => {
   if (!vehicleId) {
     return null;
@@ -110,10 +111,18 @@ const validateAssignedVehicle = async ({
     await Driver.findOne(driverFilter);
 
   if (alreadyAssigned) {
-    throw new ApiError(
-      409,
-      "This vehicle is already assigned to another driver"
-    );
+    if (forceReassign) {
+      // Unassign vehicle from previous driver
+      alreadyAssigned.assignedVehicle = null;
+      await alreadyAssigned.save();
+    } else {
+      throw new ApiError(
+        409,
+        `Vehicle ${vehicle.vehicleNo} is already assigned to driver ${alreadyAssigned.name}${
+          alreadyAssigned.driverId ? ` (${alreadyAssigned.driverId})` : ""
+        }`
+      );
+    }
   }
 
   return vehicle._id;
@@ -153,6 +162,8 @@ export const createDriver = async ({
     await validateAssignedVehicle({
       vehicleId:
         data.assignedVehicleId,
+      forceReassign:
+        data.forceReassign === true,
     });
 
   const driver = await Driver.create({
@@ -325,6 +336,9 @@ export const updateDriver = async ({
 
           currentDriverId:
             driver._id,
+
+          forceReassign:
+            data.forceReassign === true,
         });
     }
   }

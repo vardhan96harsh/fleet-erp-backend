@@ -144,18 +144,43 @@ export const createVehicle = async ({
 |
 */
 
+import Driver from "../models/Driver.js";
+
 export const getVehicles = async ({
   currentUser,
 }) => {
   ensureVehiclePermission(currentUser);
 
-  return populateVehicle(
+  const vehicles = await populateVehicle(
     Vehicle.find({
       isDeleted: false,
     })
   ).sort({
     createdAt: -1,
   });
+
+  // Map currently assigned active drivers to vehicles
+  const drivers = await Driver.find({
+    assignedVehicle: { $ne: null },
+    isDeleted: false,
+  }).select("_id name driverId mobile assignedVehicle").lean();
+
+  const driverByVehicleId = new Map();
+  for (const d of drivers) {
+    if (d.assignedVehicle) {
+      driverByVehicleId.set(d.assignedVehicle.toString(), {
+        _id: d._id,
+        name: d.name,
+        driverId: d.driverId,
+        mobile: d.mobile,
+      });
+    }
+  }
+
+  return vehicles.map((v) => ({
+    ...v,
+    assignedDriver: driverByVehicleId.get(v._id.toString()) || null,
+  }));
 };
 
 /*
@@ -184,7 +209,15 @@ export const getVehicleById = async ({
     );
   }
 
-  return vehicle;
+  const driver = await Driver.findOne({
+    assignedVehicle: vehicle._id,
+    isDeleted: false,
+  }).select("_id name driverId mobile").lean();
+
+  return {
+    ...vehicle,
+    assignedDriver: driver || null,
+  };
 };
 
 /*
