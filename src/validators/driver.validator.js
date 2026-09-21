@@ -91,6 +91,10 @@ export const createDriverSchema = z.object({
       )
       .nullable()
       .optional(),
+
+    forceReassign: z
+      .boolean()
+      .optional(),
   }),
 });
 
@@ -154,6 +158,10 @@ export const updateDriverSchema = z.object({
           "Invalid vehicle ID"
         )
         .nullable()
+        .optional(),
+
+      forceReassign: z
+        .boolean()
         .optional(),
     })
     .refine(
