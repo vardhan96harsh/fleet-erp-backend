@@ -22,6 +22,7 @@ import importExportRoutes from "./routes/importExport.routes.js";
 
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
+import assignmentRoutes from "./routes/assignment.routes.js";
 
 const app = express();
 
@@ -186,6 +187,11 @@ app.use(
 app.use(
   "/api/v1/attendance",
   attendanceRoutes
+);
+
+app.use(
+  "/api/v1/assignments",
+  assignmentRoutes
 );
 
 /*

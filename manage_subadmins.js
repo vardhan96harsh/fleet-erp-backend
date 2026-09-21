@@ -51,8 +51,9 @@ async function run() {
     amit.name = "Amit";
     amit.role = ROLES.SUB_ADMIN;
     amit.isActive = true;
+    amit.password = "Pass@123";
     await amit.save();
-    console.log("✅ Updated Sub Admin: Amit (username: amit)");
+    console.log("✅ Updated Sub Admin: Amit (username: amit / password: Pass@123)");
   }
 
   // 4. Ensure Rahul exists
@@ -72,8 +73,9 @@ async function run() {
     rahul.name = "Rahul";
     rahul.role = ROLES.SUB_ADMIN;
     rahul.isActive = true;
+    rahul.password = "Pass@123";
     await rahul.save();
-    console.log("✅ Updated Sub Admin: Rahul (username: rahul)");
+    console.log("✅ Updated Sub Admin: Rahul (username: rahul / password: Pass@123)");
   }
 
   // 5. Print final users list
