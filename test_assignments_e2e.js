@@ -44,18 +44,17 @@ async function runTests() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          registrationNumber: `MP04-${Math.floor(1000 + Math.random() * 9000)}`,
+          vehicleNo: `MP-04-${Math.floor(1000 + Math.random() * 9000)}`,
           type: "TRUCK",
-          ownershipType: "COMPANY",
-          location: "VIDISHA",
+          capacity: "24 TON",
+          ownership: "OWNED",
           status: "ACTIVE",
-          fuelType: "DIESEL",
         }),
       });
       const createVehData = await createVehRes.json();
       vehicle = createVehData.data;
     }
-    assert(vehicle && vehicle._id, `Found or created vehicle: ${vehicle?.registrationNumber || "N/A"}`);
+    assert(vehicle && vehicle._id, `Found or created vehicle: ${vehicle?.vehicleNo || "N/A"}`);
     const vehicleId = vehicle._id;
 
     // 3. Create a Test Inventory Item in Vidisha (LOCATION_A)
@@ -73,9 +72,9 @@ async function runTests() {
         quantity: 10,
         unit: "PCS",
         location: "LOCATION_A",
-        unitPrice: 1500,
-        reorderLevel: 2,
-        notes: "Automated test item",
+        purchaseRate: 1500,
+        minimumStock: 2,
+        remarks: "Automated test item",
       }),
     });
     const invData = await invRes.json();
