@@ -56,13 +56,11 @@ async function cleanDatabaseForHandover() {
     const superAdminName = env.superAdmin?.name || "Super Admin";
     const superAdminEmail = env.superAdmin?.email || "admin@bhandarigroup.com";
 
-    const hashedPassword = await bcrypt.hash(superAdminPassword, 10);
-
     const superAdmin = await User.create({
       name: superAdminName,
       username: superAdminUsername,
       email: superAdminEmail,
-      password: hashedPassword,
+      password: superAdminPassword,
       role: "SUPER_ADMIN",
       isActive: true,
       lastLogin: null,
