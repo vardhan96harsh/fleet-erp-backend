@@ -247,7 +247,7 @@ export const buildExcelWorkbook = async ({
         validationsToApply.push({
           col: categoryCol,
           formula:
-            '"Tripal / Waterproof Tarpaulin,Safety Gear,Rope,Jack,Wheel Bolt,Lubricants & Oils,Tires & Tubes,Filters,Brakes & Suspension,Electrical & Battery,Grease & Chemicals,Engine & Transmission,General Spares,Other"',
+            '"Tripal / Waterproof Tarpaulin,DEF / Urea,Safety Gear,Rope,Jack,Wheel Bolt,Lubricants & Oils,Tires & Tubes,Filters,Brakes & Suspension,Electrical & Battery,Grease & Chemicals,Engine & Transmission,General Spares,Other"',
           title: "Select Category",
           error: "Select a valid category from the dropdown or choose Other",
         });
