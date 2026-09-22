@@ -106,12 +106,12 @@ app.get("/", (req, res) => {
       200,
       {
         status: "healthy",
-        service: "Fleet ERP Backend API",
+        service: "BHANDARI GROUP Fleet ERP API",
         version: "1.0.0",
         environment: env.nodeEnv,
         timestamp: new Date().toISOString(),
       },
-      "Fleet ERP Backend API is live and operational"
+      "BHANDARI GROUP Fleet ERP API is live and operational"
     )
   );
 });
