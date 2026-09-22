@@ -188,8 +188,19 @@ const prepareRow = async ({
   const data = { ...raw };
 
   for (const [key, value] of Object.entries(data)) {
-    if (typeof value === "string") {
-      data[key] = value.trim();
+    if (DATE_FIELDS.includes(key) || NUMBER_FIELDS.includes(key)) {
+      continue;
+    }
+
+    if (value === null || value === undefined) {
+      delete data[key];
+    } else {
+      const str = String(value).trim();
+      if (str === "") {
+        delete data[key];
+      } else {
+        data[key] = str;
+      }
     }
   }
 
@@ -209,30 +220,66 @@ const prepareRow = async ({
       if (Number.isNaN(value.getTime())) {
         throw new ApiError(400, `Invalid ${key}`);
       }
-
       data[key] = value.toISOString().slice(0, 10);
       continue;
     }
 
-    const dateText = text(value);
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
-      throw new ApiError(
-        400,
-        `${key} must use YYYY-MM-DD`
-      );
+    // Handle numeric Excel date serials (e.g. 45321)
+    if (typeof value === "number" && value > 1000 && value < 100000) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const date = new Date(excelEpoch.getTime() + value * 86400000);
+      if (!Number.isNaN(date.getTime())) {
+        data[key] = date.toISOString().slice(0, 10);
+        continue;
+      }
     }
 
-    const parsed = new Date(`${dateText}T00:00:00.000Z`);
+    const dateText = text(value).trim();
 
-    if (
-      Number.isNaN(parsed.getTime()) ||
-      parsed.toISOString().slice(0, 10) !== dateText
-    ) {
-      throw new ApiError(400, `Invalid ${key}`);
+    // Standard YYYY-MM-DD or YYYY/MM/DD
+    let match = dateText.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (match) {
+      const y = match[1];
+      const m = match[2].padStart(2, "0");
+      const d = match[3].padStart(2, "0");
+      const parsed = new Date(`${y}-${m}-${d}T00:00:00.000Z`);
+      if (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === `${y}-${m}-${d}`
+      ) {
+        data[key] = `${y}-${m}-${d}`;
+        continue;
+      }
     }
 
-    data[key] = dateText;
+    // Common Indian/European DD-MM-YYYY or DD/MM/YYYY
+    match = dateText.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (match) {
+      const d = match[1].padStart(2, "0");
+      const m = match[2].padStart(2, "0");
+      const y = match[3];
+      const parsed = new Date(`${y}-${m}-${d}T00:00:00.000Z`);
+      if (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === `${y}-${m}-${d}`
+      ) {
+        data[key] = `${y}-${m}-${d}`;
+        continue;
+      }
+    }
+
+    // Fallback date parse
+    const timestamp = Date.parse(dateText);
+    if (!Number.isNaN(timestamp)) {
+      const parsed = new Date(timestamp);
+      data[key] = parsed.toISOString().slice(0, 10);
+      continue;
+    }
+
+    throw new ApiError(
+      400,
+      `${key} must be a valid date (YYYY-MM-DD or DD/MM/YYYY)`
+    );
   }
 
   for (const key of NUMBER_FIELDS) {

@@ -101,7 +101,7 @@ const isBlank = (value) =>
 */
 
 const readCellValue = (cell) => {
-  const value = cell.value;
+  const value = cell?.value;
 
   if (value === null || value === undefined) {
     return "";
@@ -119,9 +119,12 @@ const readCellValue = (cell) => {
     "formula" in value ||
     "sharedFormula" in value
   ) {
-    throw new Error(
-      "Formula cells are not allowed; paste values instead"
-    );
+    if (value.result !== undefined && value.result !== null) {
+      if (value.result instanceof Date) return value.result;
+      if (typeof value.result === "object") return "";
+      return value.result;
+    }
+    return "";
   }
 
   if (Array.isArray(value.richText)) {
@@ -134,7 +137,12 @@ const readCellValue = (cell) => {
     return value.text;
   }
 
-  throw new Error("Unsupported Excel cell value");
+  if ("result" in value && value.result !== undefined && value.result !== null) {
+    if (value.result instanceof Date) return value.result;
+    return value.result;
+  }
+
+  return String(value || "");
 };
 
 /*
@@ -512,7 +520,7 @@ export const readImportWorkbook = async ({
   if (!rows.length) {
     throw new ApiError(
       400,
-      "Excel file does not contain any data rows"
+      "No data rows found in this sheet. Please add at least 1 record below the header row before importing."
     );
   }
 
