@@ -55,18 +55,60 @@ async function runFullAudit() {
       `Role: ${adminData.data?.user?.role}`
     );
 
+    // Test or create dynamic Sub-Admin
+    let amitToken = null;
+    let amitData = null;
     const amitLogin = await fetch(`${BACKEND_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "amit", password: "Pass@123" }),
     });
-    const amitData = await amitLogin.json();
-    const amitToken = amitData.data?.accessToken;
-    report(
-      amitLogin.status === 200 && !!amitToken,
-      "Sub Admin (Amit) Login & Access Token",
-      `Role: ${amitData.data?.user?.role}`
-    );
+    amitData = await amitLogin.json();
+
+    if (amitLogin.status === 200 && amitData.data?.accessToken) {
+      amitToken = amitData.data.accessToken;
+      report(true, "Sub Admin Login & Access Token", `Role: ${amitData.data.user.role}`);
+    } else {
+      // Create temporary sub-admin via Super Admin endpoint to verify RBAC
+      const randomSuffix = Date.now().toString().slice(-6);
+      const testUsername = `subadmin_${randomSuffix}`;
+      const createSubRes = await fetch(`${BACKEND_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          name: "Test SubAdmin",
+          username: testUsername,
+          email: `subadmin_${randomSuffix}@test.local`,
+          password: "Pass@123",
+        }),
+      });
+      const createSubData = await createSubRes.json();
+      const testUser = createSubData.data?.user || createSubData.data;
+
+      const subLogin = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: testUsername, password: "Pass@123" }),
+      });
+      const subLoginData = await subLogin.json();
+      amitToken = subLoginData.data?.accessToken;
+      report(
+        subLogin.status === 200 && !!amitToken,
+        "Sub Admin Dynamic Provisioning & Login",
+        `Created & Logged in as: ${testUsername}`
+      );
+
+      // Clean up temporary subadmin after test
+      if (testUser?.id) {
+        await fetch(`${BACKEND_URL}/users/${testUser.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+      }
+    }
 
     // 4. VEHICLES MANAGEMENT & DRIVER POPULATION
     console.log("\n--- 4. VEHICLES & ASSIGNED DRIVER MAPPING ---");

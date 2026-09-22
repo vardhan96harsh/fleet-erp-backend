@@ -214,32 +214,112 @@ export const buildExcelWorkbook = async ({
     }
   });
 
-  if (template && type === "INVENTORY") {
-    // Provide a ready-to-fill first row for the chosen location.
-    sheet.addRow({ location });
+  if (template) {
+    const validationsToApply = [];
 
-    const locationColumn =
-      columns.findIndex(
-        ([, key]) => key === "location"
-      ) + 1;
+    if (type === "INVENTORY") {
+      // Provide a ready-to-fill first row for the chosen location.
+      sheet.addRow({ location });
 
-    for (
-      let rowNumber = 2;
-      rowNumber <= MAX_IMPORT_ROWS + 1;
-      rowNumber++
-    ) {
-      sheet.getCell(
-        rowNumber,
-        locationColumn
-      ).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: [`"${location}"`],
-        showErrorMessage: true,
-        errorStyle: "stop",
-        errorTitle: "Incorrect location",
-        error: `Use ${location} for this template`,
-      };
+      const locationCol = columns.findIndex(([, key]) => key === "location") + 1;
+      const categoryCol = columns.findIndex(([, key]) => key === "category") + 1;
+      const unitCol = columns.findIndex(([, key]) => key === "unit") + 1;
+      const statusCol = columns.findIndex(([, key]) => key === "status") + 1;
+
+      if (locationCol > 0) {
+        validationsToApply.push({
+          col: locationCol,
+          formula: `"${location}"`,
+          title: "Location Code",
+          error: `Use ${location} for this template`,
+        });
+      }
+
+      if (categoryCol > 0) {
+        validationsToApply.push({
+          col: categoryCol,
+          formula:
+            '"Tripal / Waterproof Tarpaulin,Safety Gear,Rope,Jack,Wheel Bolt,Lubricants & Oils,Tires & Tubes,Filters,Brakes & Suspension,Electrical & Battery,Grease & Chemicals,Engine & Transmission,General Spares,Other"',
+          title: "Select Category",
+          error: "Select a valid category from the dropdown or choose Other",
+        });
+      }
+
+      if (unitCol > 0) {
+        validationsToApply.push({
+          col: unitCol,
+          formula: '"PCS,LTR,SET,PAIR,KG,MTR,CAN,DRUM,BOX"',
+          title: "Select Unit",
+          error: "Select a standard inventory unit from the dropdown",
+        });
+      }
+
+      if (statusCol > 0) {
+        validationsToApply.push({
+          col: statusCol,
+          formula: '"ACTIVE,INACTIVE"',
+          title: "Select Status",
+          error: "Status must be ACTIVE or INACTIVE",
+        });
+      }
+    } else if (type === "VEHICLE") {
+      const typeCol = columns.findIndex(([, key]) => key === "type") + 1;
+      const ownershipCol = columns.findIndex(([, key]) => key === "ownership") + 1;
+      const statusCol = columns.findIndex(([, key]) => key === "status") + 1;
+
+      if (typeCol > 0) {
+        validationsToApply.push({
+          col: typeCol,
+          formula:
+            '"10-Wheeler Tipper,12-Wheeler Tipper,14-Wheeler Haulage,16-Wheeler Tipper,Trailer Tractor,10-Wheeler Haulage,Tanker,Container Truck,Other"',
+          title: "Select Vehicle Type",
+          error: "Select a valid vehicle type from the dropdown",
+        });
+      }
+
+      if (ownershipCol > 0) {
+        validationsToApply.push({
+          col: ownershipCol,
+          formula: '"OWNED,LEASED,ATTACHED"',
+          title: "Select Ownership",
+          error: "Ownership must be OWNED, LEASED, or ATTACHED",
+        });
+      }
+
+      if (statusCol > 0) {
+        validationsToApply.push({
+          col: statusCol,
+          formula: '"ACTIVE,MAINTENANCE,INACTIVE"',
+          title: "Select Status",
+          error: "Status must be ACTIVE, MAINTENANCE, or INACTIVE",
+        });
+      }
+    } else if (type === "DRIVER") {
+      const statusCol = columns.findIndex(([, key]) => key === "status") + 1;
+
+      if (statusCol > 0) {
+        validationsToApply.push({
+          col: statusCol,
+          formula: '"ACTIVE,ON_LEAVE,INACTIVE"',
+          title: "Select Status",
+          error: "Status must be ACTIVE, ON_LEAVE, or INACTIVE",
+        });
+      }
+    }
+
+    // Apply native Excel dropdown data validation to each cell in the template range (rows 2 to 1000)
+    for (const val of validationsToApply) {
+      for (let rowNumber = 2; rowNumber <= MAX_IMPORT_ROWS + 1; rowNumber++) {
+        sheet.getCell(rowNumber, val.col).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: [val.formula],
+          showErrorMessage: true,
+          errorStyle: "stop",
+          errorTitle: val.title,
+          error: val.error,
+        };
+      }
     }
   }
 
