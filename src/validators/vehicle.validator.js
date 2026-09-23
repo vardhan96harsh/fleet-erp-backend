@@ -252,3 +252,51 @@ export const updateVehicleSchema = z.object({
       }
     ),
 });
+
+/*
+|--------------------------------------------------------------------------
+| ADD SERVICE RECORD
+|--------------------------------------------------------------------------
+*/
+
+export const addServiceRecordSchema = z.object({
+  body: z.object({
+    date: requiredDateSchema,
+
+    description: z
+      .string()
+      .trim()
+      .min(1, "Service description is required")
+      .max(1000),
+  }),
+});
+
+/*
+|--------------------------------------------------------------------------
+| ADD ACCIDENT REPORT
+|--------------------------------------------------------------------------
+*/
+
+export const addAccidentReportSchema = z.object({
+  body: z.object({
+    date: requiredDateSchema,
+
+    description: z
+      .string()
+      .trim()
+      .min(1, "Accident description is required")
+      .max(1000),
+
+    driverName: z
+      .string()
+      .trim()
+      .max(150)
+      .optional(),
+
+    driverMobile: z
+      .string()
+      .trim()
+      .max(30)
+      .optional(),
+  }),
+});

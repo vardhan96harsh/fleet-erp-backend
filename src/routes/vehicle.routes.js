@@ -8,6 +8,10 @@ import {
   removeVehicle,
   listDeletedVehicles,
   restoreDeletedVehicle,
+  addServiceEntry,
+  deleteServiceEntry,
+  addAccidentEntry,
+  deleteAccidentEntry,
 } from "../controllers/vehicle.controller.js";
 
 import {
@@ -19,6 +23,8 @@ import validate from "../middleware/validate.middleware.js";
 import {
   createVehicleSchema,
   updateVehicleSchema,
+  addServiceRecordSchema,
+  addAccidentReportSchema,
 } from "../validators/vehicle.validator.js";
 
 const router = express.Router();
@@ -42,6 +48,46 @@ router.post(
   "/:id/restore",
   restoreDeletedVehicle
 );
+
+/*
+|--------------------------------------------------------------------------
+| SERVICE RECORD SUB-ROUTES
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/:id/service",
+  validate(addServiceRecordSchema),
+  addServiceEntry
+);
+
+router.delete(
+  "/:id/service/:sid",
+  deleteServiceEntry
+);
+
+/*
+|--------------------------------------------------------------------------
+| ACCIDENT REPORT SUB-ROUTES
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/:id/accident",
+  validate(addAccidentReportSchema),
+  addAccidentEntry
+);
+
+router.delete(
+  "/:id/accident/:aid",
+  deleteAccidentEntry
+);
+
+/*
+|--------------------------------------------------------------------------
+| VEHICLE CRUD
+|--------------------------------------------------------------------------
+*/
 
 router
   .route("/:id")

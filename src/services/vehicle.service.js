@@ -470,3 +470,141 @@ export const restoreVehicle = async ({
     Vehicle.findById(vehicle._id)
   );
 };
+
+/*
+|--------------------------------------------------------------------------
+| ADD SERVICE RECORD  (atomic $push — touches only serviceHistory)
+|--------------------------------------------------------------------------
+*/
+
+export const addServiceRecord = async ({
+  vehicleId,
+  data,
+  currentUser,
+}) => {
+  ensureVehiclePermission(currentUser);
+
+  const vehicle = await Vehicle.findOneAndUpdate(
+    { _id: vehicleId, isDeleted: false },
+    {
+      $push: {
+        serviceHistory: {
+          $each: [
+            {
+              date: data.date,
+              description: data.description.trim(),
+            },
+          ],
+          $position: 0,
+        },
+      },
+      $set: { updatedBy: currentUser._id },
+    },
+    { new: true }
+  );
+
+  if (!vehicle) {
+    throw new ApiError(404, "Vehicle not found");
+  }
+
+  return populateVehicle(Vehicle.findById(vehicle._id));
+};
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE SERVICE RECORD  (atomic $pull — touches only serviceHistory)
+|--------------------------------------------------------------------------
+*/
+
+export const removeServiceRecord = async ({
+  vehicleId,
+  recordId,
+  currentUser,
+}) => {
+  ensureVehiclePermission(currentUser);
+
+  const vehicle = await Vehicle.findOneAndUpdate(
+    { _id: vehicleId, isDeleted: false },
+    {
+      $pull: { serviceHistory: { _id: recordId } },
+      $set: { updatedBy: currentUser._id },
+    },
+    { new: true }
+  );
+
+  if (!vehicle) {
+    throw new ApiError(404, "Vehicle not found");
+  }
+
+  return populateVehicle(Vehicle.findById(vehicle._id));
+};
+
+/*
+|--------------------------------------------------------------------------
+| ADD ACCIDENT REPORT  (atomic $push — touches only accidentReports)
+|--------------------------------------------------------------------------
+*/
+
+export const addAccidentReport = async ({
+  vehicleId,
+  data,
+  currentUser,
+}) => {
+  ensureVehiclePermission(currentUser);
+
+  const vehicle = await Vehicle.findOneAndUpdate(
+    { _id: vehicleId, isDeleted: false },
+    {
+      $push: {
+        accidentReports: {
+          $each: [
+            {
+              date: data.date,
+              description: data.description.trim(),
+              driverName: (data.driverName || "").trim(),
+              driverMobile: (data.driverMobile || "").trim(),
+            },
+          ],
+          $position: 0,
+        },
+      },
+      $set: { updatedBy: currentUser._id },
+    },
+    { new: true }
+  );
+
+  if (!vehicle) {
+    throw new ApiError(404, "Vehicle not found");
+  }
+
+  return populateVehicle(Vehicle.findById(vehicle._id));
+};
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE ACCIDENT REPORT  (atomic $pull — touches only accidentReports)
+|--------------------------------------------------------------------------
+*/
+
+export const removeAccidentReport = async ({
+  vehicleId,
+  reportId,
+  currentUser,
+}) => {
+  ensureVehiclePermission(currentUser);
+
+  const vehicle = await Vehicle.findOneAndUpdate(
+    { _id: vehicleId, isDeleted: false },
+    {
+      $pull: { accidentReports: { _id: reportId } },
+      $set: { updatedBy: currentUser._id },
+    },
+    { new: true }
+  );
+
+  if (!vehicle) {
+    throw new ApiError(404, "Vehicle not found");
+  }
+
+  return populateVehicle(Vehicle.findById(vehicle._id));
+};

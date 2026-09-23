@@ -9,6 +9,10 @@ import {
   deleteVehicle,
   getDeletedVehicles,
   restoreVehicle,
+  addServiceRecord,
+  removeServiceRecord,
+  addAccidentReport,
+  removeAccidentReport,
 } from "../services/vehicle.service.js";
 
 /*
@@ -169,3 +173,83 @@ export const restoreDeletedVehicle =
       )
     );
   });
+
+/*
+|--------------------------------------------------------------------------
+| ADD SERVICE RECORD
+|--------------------------------------------------------------------------
+*/
+
+export const addServiceEntry = asyncHandler(
+  async (req, res) => {
+    const vehicle = await addServiceRecord({
+      vehicleId: req.params.id,
+      data: req.validated.body,
+      currentUser: req.user,
+    });
+
+    return res.status(201).json(
+      new ApiResponse(201, vehicle, "Service record added")
+    );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE SERVICE RECORD
+|--------------------------------------------------------------------------
+*/
+
+export const deleteServiceEntry = asyncHandler(
+  async (req, res) => {
+    const vehicle = await removeServiceRecord({
+      vehicleId: req.params.id,
+      recordId: req.params.sid,
+      currentUser: req.user,
+    });
+
+    return res.status(200).json(
+      new ApiResponse(200, vehicle, "Service record removed")
+    );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| ADD ACCIDENT REPORT
+|--------------------------------------------------------------------------
+*/
+
+export const addAccidentEntry = asyncHandler(
+  async (req, res) => {
+    const vehicle = await addAccidentReport({
+      vehicleId: req.params.id,
+      data: req.validated.body,
+      currentUser: req.user,
+    });
+
+    return res.status(201).json(
+      new ApiResponse(201, vehicle, "Accident report added")
+    );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE ACCIDENT REPORT
+|--------------------------------------------------------------------------
+*/
+
+export const deleteAccidentEntry = asyncHandler(
+  async (req, res) => {
+    const vehicle = await removeAccidentReport({
+      vehicleId: req.params.id,
+      reportId: req.params.aid,
+      currentUser: req.user,
+    });
+
+    return res.status(200).json(
+      new ApiResponse(200, vehicle, "Accident report removed")
+    );
+  }
+);
