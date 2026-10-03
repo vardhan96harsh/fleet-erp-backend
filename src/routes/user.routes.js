@@ -7,6 +7,7 @@ import {
   updateUser,
   updateUserStatus,
   resetUserPassword,
+  deleteUser,
 } from "../controllers/user.controller.js";
 
 import {
@@ -49,7 +50,8 @@ router
   .patch(
     validate(updateUserSchema),
     updateUser
-  );
+  )
+  .delete(deleteUser);
 
 router.patch(
   "/:id/status",

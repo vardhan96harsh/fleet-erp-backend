@@ -130,3 +130,30 @@ export const resetSubAdminPassword = async (
 
   return true;
 };
+
+import RefreshToken from "../models/RefreshToken.js";
+
+export const deleteSubAdmin = async ({ id, currentUserId }) => {
+  if (String(id) === String(currentUserId)) {
+    throw new ApiError(400, "You cannot delete your own account");
+  }
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    throw new ApiError(404, "Sub Admin not found");
+  }
+
+  if (user.role === ROLES.SUPER_ADMIN) {
+    throw new ApiError(400, "Super Admin accounts cannot be deleted");
+  }
+
+  // Revoke active sessions/refresh tokens for this Sub Admin
+  await RefreshToken.deleteMany({ user: user._id });
+
+  // Delete the sub-admin account.
+  // Note: All fleet vehicles, drivers, inventory and assignments remain 100% intact.
+  await User.findByIdAndDelete(user._id);
+
+  return true;
+};
